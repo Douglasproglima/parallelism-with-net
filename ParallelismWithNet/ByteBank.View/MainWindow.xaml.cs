@@ -1,23 +1,12 @@
 ﻿using ByteBank.Core.Model;
 using ByteBank.Core.Repository;
 using ByteBank.Core.Service;
-using ByteBank.View.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-
 namespace ByteBank.View
 {
     public partial class MainWindow : Window
@@ -48,6 +37,26 @@ namespace ByteBank.View
 
             var inicio = DateTime.Now;
 
+            var resultado = new List<string>();
+
+            Thread primeiraThread = new Thread(() =>
+            {
+                foreach (var conta in contas)
+                {
+                    var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
+                    resultado.Add(resultadoProcessamento);
+                }
+            });
+
+            Thread SegundaThread = new Thread(() =>
+            {
+                foreach (var conta in contas)
+                {
+                    var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
+                    resultado.Add(resultadoProcessamento);
+                }
+            });
+
             BtnCancelar.IsEnabled = true;
             var progress = new Progress<String>(str =>
                 PgsProgresso.Value++);
@@ -56,10 +65,10 @@ namespace ByteBank.View
 
             try
             {
-                var resultado = await ConsolidarContas(contas, progress, _cts.Token);
+                var _resultado = await ConsolidarContas(contas, progress, _cts.Token);
 
                 var fim = DateTime.Now;
-                AtualizarView(resultado, fim - inicio);
+                AtualizarView(_resultado, fim - inicio);
             }
             catch (OperationCanceledException)
             {

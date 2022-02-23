@@ -31,17 +31,23 @@ namespace ByteBank.View
 
             var contas = r_Repositorio.GetContaClientes();
 
-            PgsProgresso.Maximum = contas.Count();
+            var contasQtdePorThread = contas.Count() / 4;
 
-            LimparView();
+            //PgsProgresso.Maximum = contas.Count();
+            //LimparView();
 
-            var inicio = DateTime.Now;
+            var contas_parte1 = contas.Take(contasQtdePorThread);
+            var contas_parte2 = contas.Skip(contasQtdePorThread).Take(contasQtdePorThread);
+            var contas_parte3 = contas.Skip(contasQtdePorThread*2).Take(contasQtdePorThread);
+            var contas_parte4 = contas.Skip(contasQtdePorThread*3);
 
             var resultado = new List<string>();
 
+            var inicio = DateTime.Now;
+
             Thread primeiraThread = new Thread(() =>
             {
-                foreach (var conta in contas)
+                foreach (var conta in contas_parte1)
                 {
                     var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
                     resultado.Add(resultadoProcessamento);
@@ -50,16 +56,45 @@ namespace ByteBank.View
 
             Thread SegundaThread = new Thread(() =>
             {
-                foreach (var conta in contas)
+                foreach (var conta in contas_parte2)
                 {
                     var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
                     resultado.Add(resultadoProcessamento);
                 }
             });
 
+            Thread TerceiraThread = new Thread(() =>
+            {
+                foreach (var conta in contas_parte3)
+                {
+                    var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
+                    resultado.Add(resultadoProcessamento);
+                }
+            });
+
+            Thread QuartaThread = new Thread(() =>
+            {
+                foreach (var conta in contas_parte4)
+                {
+                    var resultadoProcessamento = r_Servico.ConsolidarMovimentacao(conta);
+                    resultado.Add(resultadoProcessamento);
+                }
+            });
+
+            primeiraThread.Start();
+            SegundaThread.Start();
+            TerceiraThread.Start();
+            QuartaThread.Start();
+
+            while (primeiraThread.IsAlive || SegundaThread.IsAlive || TerceiraThread.IsAlive || QuartaThread.IsAlive) 
+                Thread.Sleep(250);
+
+            
             BtnCancelar.IsEnabled = true;
             var progress = new Progress<String>(str =>
-                PgsProgresso.Value++);
+                PgsProgresso.Value++
+            );
+            
             //var byteBankProgress = new ByteBankProgress<String>(str =>
             //  PgsProgresso.Value++);
 

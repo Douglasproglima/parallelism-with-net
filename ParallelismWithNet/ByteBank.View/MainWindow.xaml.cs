@@ -20,10 +20,14 @@ namespace ByteBank.View
 
             r_Repositorio = new ContaClienteRepository();
             r_Servico = new ContaClienteService();
+            BtnProcessar.IsEnabled = false;
         }
 
         private void BtnProcessar_Click(object sender, RoutedEventArgs e)
         {
+            //Retorna a thread principal que está sendo executado no momento
+            var taskScheduleUI = TaskScheduler.FromCurrentSynchronizationContext();
+
             var contas = r_Repositorio.GetContaClientes();
 
             var resultado = new List<string>();
@@ -48,11 +52,27 @@ namespace ByteBank.View
 
             //Task.WaitAll: Aguarda a execução de todas as threads
             //Enquanto não executar todas as threads não passa para linha debaixo.
-            Task.WaitAll(contasTarefas);
+            //Task.WaitAll(contasTarefas);
 
-            var fim = DateTime.Now;
+            /*Diferente do WaitAll(), o WhenAll(): Ao invés de executar a thread que executa a função para travar e aguardar as outras
+             * tarefas(threads), ele retornar uma outra threads, cujo a função é aguardar a execução das demais threads
+             */
+            Task.WhenAll(contasTarefas)
+                //Só executa quando a thread anterior terminar
+                .ContinueWith((task) =>
+                {
+                    //Aqui, consigo pegar a thread que originou a execução, dessa forma tem info do retorno, dos erros etc...
+                    var fim = DateTime.Now;
+                    AtualizarView(resultado, fim - inicio);
+                }, taskScheduleUI /*Será executado de acordo com a demada da task principal*/)
+                .ContinueWith((task) =>
+                {
+                    BtnProcessar.IsEnabled = true;
+                }, taskScheduleUI);
 
-            AtualizarView(resultado, fim - inicio);
+            //Movi esse código para execução da thread .ContinueWith()
+            //var fim = DateTime.Now;
+            //AtualizarView(resultado, fim - inicio);
         }
 
         private void AtualizarView(List<String> result, TimeSpan elapsedTime)

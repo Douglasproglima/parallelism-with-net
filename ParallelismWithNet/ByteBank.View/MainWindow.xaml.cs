@@ -2,6 +2,9 @@
 using ByteBank.Core.Service;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ByteBank.View
@@ -29,11 +32,23 @@ namespace ByteBank.View
 
             var inicio = DateTime.Now;
 
-            foreach (var conta in contas)
+            /*Objetivo: Transformar a lista de contas em uma lista de tarefas(Consolidade a conta de um ou mais clientes)*/
+            var contasTarefas = contas.Select(conta =>
             {
-                var resultadoConta = r_Servico.ConsolidarMovimentacao(conta);
-                resultado.Add(resultadoConta);
-            }
+                /*Task.Factory: Constroi as tarefas
+                 *TaskScheduler: Define quando/onde uma tarefa será executada nos cores
+                 * OBSERVACAO: Quando se usa o Task.Factory, automáticamente estamos usando o "TaskScheduler"
+                 */
+                return Task.Factory.StartNew(() =>
+                {
+                    var retornoConta = r_Servico.ConsolidarMovimentacao(conta);
+                    resultado.Add(retornoConta);
+                });
+            }).ToArray();
+
+            //Task.WaitAll: Aguarda a execução de todas as threads
+            //Enquanto não executar todas as threads não passa para linha debaixo.
+            Task.WaitAll(contasTarefas);
 
             var fim = DateTime.Now;
 

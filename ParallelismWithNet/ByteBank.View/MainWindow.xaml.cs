@@ -87,7 +87,7 @@ namespace ByteBank.View
                     cancellationToken.ThrowIfCancellationRequested();
                     //if(cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
 
-                    var retornoConsolidacao = r_Servico.ConsolidarMovimentacao(conta);
+                    var retornoConsolidacao = r_Servico.ConsolidarMovimentacao(conta, cancellationToken);
 
                     paramProgresso.Report(retornoConsolidacao);
 

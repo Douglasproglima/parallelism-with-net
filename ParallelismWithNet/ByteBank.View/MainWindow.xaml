@@ -28,9 +28,18 @@
         <TextBlock DockPanel.Dock="Top">Resultado:</TextBlock>
         <TextBlock DockPanel.Dock="Top"
                    Name="TxtProgresso"/>
+        
+        <!-- Barra de Progresso -->
+        <ProgressBar 
+            Name="PgsProgressoProcessamento" 
+            Minimum="0" 
+            DockPanel.Dock="Bottom"
+            Height="25"
+            Margin="0 10 "></ProgressBar>
+        
         <ListView Name="LstResultados"
                   Background="Beige"
-                  Margin="0 10">
+                  Margin="0 5">
         </ListView>
     </DockPanel>
 </Window>

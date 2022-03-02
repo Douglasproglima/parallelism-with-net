@@ -30,7 +30,9 @@ namespace ByteBank.View
 
             var contas = r_Repositorio.GetContaClientes();
 
-            AtualizarView(new List<string>(), TimeSpan.Zero);
+            LimparView();
+
+            PgsProgressoProcessamento.Maximum = contas.Count();
 
             var inicio = DateTime.Now;
             var resultadoConsolidadeConta = await RetonarConsolidarConta(contas);
@@ -48,8 +50,23 @@ namespace ByteBank.View
 
         private async Task<string[]> RetonarConsolidarConta(IEnumerable<ContaCliente> contas)
         {
+            //Acessa a thread principal para atualizar a barra de progresso
+            var taskScheduleGui = TaskScheduler.FromCurrentSynchronizationContext();
+
             var tasks = contas.Select(conta =>
-                Task.Factory.StartNew(() => r_Servico.ConsolidarMovimentacao(conta))
+                Task.Factory.StartNew(() => 
+                {
+                    var retornoConsolidacao = r_Servico.ConsolidarMovimentacao(conta);
+
+                    Task.Factory.StartNew(() => 
+                        PgsProgressoProcessamento.Value++,
+                        CancellationToken.None,
+                        TaskCreationOptions.None,
+                        taskScheduleGui
+                    );
+
+                    return retornoConsolidacao;
+                })
             );
 
             var resultado = await Task.WhenAll(tasks);
@@ -64,6 +81,13 @@ namespace ByteBank.View
 
             LstResultados.ItemsSource = result;
             TxtTempo.Text = mensagem;
+        }
+
+        private void LimparView()
+        {
+            LstResultados.ItemsSource = null;
+            TxtTempo.Text = String.Empty;
+            PgsProgressoProcessamento.Value = 0;
         }
     }
 }

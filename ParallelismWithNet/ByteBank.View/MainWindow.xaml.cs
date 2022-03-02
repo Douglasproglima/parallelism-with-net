@@ -1,6 +1,7 @@
 ﻿using ByteBank.Core.Model;
 using ByteBank.Core.Repository;
 using ByteBank.Core.Service;
+using ByteBank.View.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -35,7 +36,14 @@ namespace ByteBank.View
             PgsProgressoProcessamento.Maximum = contas.Count();
 
             var inicio = DateTime.Now;
-            var resultadoConsolidadeConta = await RetonarConsolidarConta(contas);
+
+            //Acessa a thread principal para atualizar a barra de progresso
+            var taskScheduleGui = TaskScheduler.FromCurrentSynchronizationContext();
+
+            var barraProgresso = new GenericProgressBar<string>((param) => PgsProgressoProcessamento.Value++);
+
+            var resultadoConsolidadeConta = await RetonarConsolidarConta(contas, barraProgresso);
+            
             var fim = DateTime.Now;
             
             AtualizarView(resultadoConsolidadeConta, fim - inicio);
@@ -48,22 +56,14 @@ namespace ByteBank.View
             BtnProcessar.IsEnabled = isHabilitar;
         }
 
-        private async Task<string[]> RetonarConsolidarConta(IEnumerable<ContaCliente> contas)
+        private async Task<string[]> RetonarConsolidarConta(IEnumerable<ContaCliente> contas, IProgress<string> paramProgresso)
         {
-            //Acessa a thread principal para atualizar a barra de progresso
-            var taskScheduleGui = TaskScheduler.FromCurrentSynchronizationContext();
-
             var tasks = contas.Select(conta =>
                 Task.Factory.StartNew(() => 
                 {
                     var retornoConsolidacao = r_Servico.ConsolidarMovimentacao(conta);
 
-                    Task.Factory.StartNew(() => 
-                        PgsProgressoProcessamento.Value++,
-                        CancellationToken.None,
-                        TaskCreationOptions.None,
-                        taskScheduleGui
-                    );
+                    paramProgresso.Report(retornoConsolidacao);
 
                     return retornoConsolidacao;
                 })

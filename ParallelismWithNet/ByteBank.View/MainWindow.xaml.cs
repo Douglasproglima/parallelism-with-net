@@ -40,10 +40,12 @@ namespace ByteBank.View
             //Acessa a thread principal para atualizar a barra de progresso
             var taskScheduleGui = TaskScheduler.FromCurrentSynchronizationContext();
 
-            var barraProgresso = new GenericProgressBar<string>((param) => PgsProgressoProcessamento.Value++);
+            //var progressDotnet = new Progress<string>((param) => PgsProgressoProcessamento.Value++);
+            //var resultadoConsolidadeConta = await RetonarConsolidarConta(contas, progressDotnet);
 
+            var barraProgresso = new GenericProgressBar<string>((param) => PgsProgressoProcessamento.Value++);
             var resultadoConsolidadeConta = await RetonarConsolidarConta(contas, barraProgresso);
-            
+
             var fim = DateTime.Now;
             
             AtualizarView(resultadoConsolidadeConta, fim - inicio);

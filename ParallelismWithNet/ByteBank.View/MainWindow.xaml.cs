@@ -1,14 +1,13 @@
-﻿using ByteBank.Core.Model;
-using ByteBank.Core.Repository;
-using ByteBank.Core.Service;
-using ByteBank.View.Utils;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using ByteBank.Core.Model;
+using ByteBank.Core.Repository;
+using ByteBank.Core.Service;
+using ByteBank.View.Utils;
 
 namespace ByteBank.View
 {
@@ -16,6 +15,7 @@ namespace ByteBank.View
     {
         private readonly ContaClienteRepository r_Repositorio;
         private readonly ContaClienteService r_Servico;
+        private CancellationTokenSource _cancellationTokenSource;
 
         public MainWindow()
         {
@@ -27,7 +27,9 @@ namespace ByteBank.View
 
         private async void BtnProcessar_Click(object sender, RoutedEventArgs e)
         {
-            HabilitarBotaoProcessar(false);
+            HabilitarDesabilitarBtnProcessar(false);
+
+            _cancellationTokenSource = new CancellationTokenSource();
 
             var contas = r_Repositorio.GetContaClientes();
 
@@ -37,42 +39,63 @@ namespace ByteBank.View
 
             var inicio = DateTime.Now;
 
-            BtnCancelar.IsEnabled = true;
+            HabilitarDesabilitarBtnCancelar(true);
 
             //var progressDotnet = new Progress<string>((param) => PgsProgressoProcessamento.Value++);
             //var resultadoConsolidadeConta = await RetonarConsolidarConta(contas, progressDotnet);
 
             var barraProgresso = new GenericProgressBar<string>((param) => PgsProgressoProcessamento.Value++);
-            var resultadoConsolidadeConta = await RetonarConsolidarConta(contas, barraProgresso);
 
-            var fim = DateTime.Now;
-            
-            AtualizarView(resultadoConsolidadeConta, fim - inicio);
-            
-            HabilitarBotaoProcessar(true);
+            try
+            {
+                var resultadoConsolidadeConta = await RetonarConsolidarConta(contas, barraProgresso, _cancellationTokenSource.Token);
+                var fim = DateTime.Now;
+                AtualizarView(resultadoConsolidadeConta, fim - inicio);
+            }
+            catch (OperationCanceledException erro)
+            {
+                TxtTempo.Text = "Operação Cancelada!";
+            }
+            finally
+            { 
+                HabilitarDesabilitarBtnProcessar(true);
+                HabilitarDesabilitarBtnCancelar(false);
+            }
         }
 
         private void BtnCancelar_Click(object sender, RoutedEventArgs e)
         {
-            BtnCancelar.IsEnabled = false;
+            HabilitarDesabilitarBtnCancelar(false);
+            _cancellationTokenSource.Cancel();
         }
 
-        private void HabilitarBotaoProcessar(bool isHabilitar)
+        private void HabilitarDesabilitarBtnProcessar(bool isHabilitar)
         {
             BtnProcessar.IsEnabled = isHabilitar;
         }
 
-        private async Task<string[]> RetonarConsolidarConta(IEnumerable<ContaCliente> contas, IProgress<string> paramProgresso)
+        private void HabilitarDesabilitarBtnCancelar(bool isHabilitar)
+        {
+            BtnCancelar.IsEnabled = isHabilitar;
+        }
+
+        private async Task<string[]> RetonarConsolidarConta(IEnumerable<ContaCliente> contas, IProgress<string> paramProgresso, CancellationToken cancellationToken)
         {
             var tasks = contas.Select(conta =>
                 Task.Factory.StartNew(() => 
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    //if(cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
+
                     var retornoConsolidacao = r_Servico.ConsolidarMovimentacao(conta);
 
                     paramProgresso.Report(retornoConsolidacao);
 
+                    cancellationToken.ThrowIfCancellationRequested();
+                    //if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
+
                     return retornoConsolidacao;
-                })
+                }, cancellationToken)
             );
 
             var resultado = await Task.WhenAll(tasks);

@@ -37,8 +37,7 @@ namespace ByteBank.View
 
             var inicio = DateTime.Now;
 
-            //Acessa a thread principal para atualizar a barra de progresso
-            var taskScheduleGui = TaskScheduler.FromCurrentSynchronizationContext();
+            BtnCancelar.IsEnabled = true;
 
             //var progressDotnet = new Progress<string>((param) => PgsProgressoProcessamento.Value++);
             //var resultadoConsolidadeConta = await RetonarConsolidarConta(contas, progressDotnet);
@@ -51,6 +50,11 @@ namespace ByteBank.View
             AtualizarView(resultadoConsolidadeConta, fim - inicio);
             
             HabilitarBotaoProcessar(true);
+        }
+
+        private void BtnCancelar_Click(object sender, RoutedEventArgs e)
+        {
+            BtnCancelar.IsEnabled = false;
         }
 
         private void HabilitarBotaoProcessar(bool isHabilitar)

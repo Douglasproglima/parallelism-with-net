@@ -12,23 +12,42 @@
                Height="75"
                DockPanel.Dock="Top"/>
 
-        <!-- Botão para Processamento -->
         <TextBlock Name="TxtTempo"
                    DockPanel.Dock="Bottom"
                    HorizontalAlignment="Right">
         </TextBlock>
-        <Button Name="BtnProcessar"
+        
+        <!-- Botão para Processamento -->
+        <Grid DockPanel.Dock="Bottom">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Button Name="BtnProcessar"
+                FontWeight="Bold"
                 Padding="10"
-                DockPanel.Dock="Bottom"
-                Click="BtnProcessar_Click">
-            Fazer Processamento
-        </Button>
+                Margin="0 0 5 0"
+                Grid.Column="0"
+                Click="BtnProcessar_Click" >
+                Processar
+            </Button>
+
+            <Button Name="BtnCancelar"
+                FontWeight="Bold"
+                Padding="10"
+                Margin="5 0 0 0"
+                IsEnabled="False"
+                Grid.Column="1"
+                Click="BtnCancelar_Click">
+                Cancelar
+            </Button>
+        </Grid>
 
         <!-- Resultado -->
-        <TextBlock DockPanel.Dock="Top">Resultado:</TextBlock>
-        <TextBlock DockPanel.Dock="Top"
-                   Name="TxtProgresso"/>
-        
+        <TextBlock DockPanel.Dock="Top" FontWeight="Bold">Resultado:</TextBlock>
+        <TextBlock DockPanel.Dock="Top" Name="TxtProgresso"/>
+
         <!-- Barra de Progresso -->
         <ProgressBar 
             Name="PgsProgressoProcessamento" 
@@ -36,7 +55,7 @@
             DockPanel.Dock="Bottom"
             Height="25"
             Margin="0 10 "></ProgressBar>
-        
+
         <ListView Name="LstResultados"
                   Background="Beige"
                   Margin="0 5">
